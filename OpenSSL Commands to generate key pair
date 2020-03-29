@@ -1,0 +1,30 @@
+Definitions: https://serverfault.com/a/9717
+
+1. Generate Flight Module Private Key
+openssl genrsa -out flight-module-private-key.pem 2048
+
+2. Generate Flight Module Public Key
+openssl rsa -in flight-module-private-key.pem -out flight-module-public-key.pem -pubout -outform PEM
+
+3. Create Flight Module CSR from Public Key
+openssl req -new -key flight-module-private-key.pem -out flight-module-csr.pem -subj "/C=IN/ST=KA/L=Bengaluru/O=YourOrganizationName/OU=IT/CN=YourOrganizationName"
+
+4. Convert Certificate Chain in (PKCS7 Format+DER Encoding) to (PKCS7 Format+Base64 Encoding with Header, used in iDronePort)
+openssl pkcs7 -inform der -in flight-module-provider-certificate-chain.p7b -out flight-module-provider-certificate-chain-idroneport.pem
+
+5. Convert Certificate Chain in (PKCS7 Format+Base64 Encoding with Header) to Individual Certificates in PEM format
+openssl pkcs7 -print_certs -in flight-module-provider-certificate-chain-idroneport.pem -out flight-module-provider-certificates.pem
+
+6. Generate Test Flight Module Provider Key Pair
+openssl req -newkey rsa:2048 -nodes -keyout test-flight-module-provider-private-key.pem -x509 -days 365 -out test-flight-module-provider-digital-sky-certificate-chain.pem -subj "/C=IN/ST=KA/L=Koramangala/O=YourOrganizationName/OU=IT/CN=YourOrganizationName
+
+7. Convert Self-signed Certificate (Base64 encoding) to (PKCS7 Format+Base64 Encoding with Header, used in iDronePort)
+openssl crl2pkcs7 -nocrl -certfile test-flight-module-provider-digital-sky-certificate-chain.pem -out test-flight-module-provider-idroneport-certificate-chain.pem
+
+8. Generating Manufacturer Trusted Certificate Chain for Digital Sky
+  - Run 5. to generate list of all certificates from a certificate chain
+  - Create a new file with the following certificates in order:
+    - Intermediate Certificate 1 (parent of End Entity Certificate)
+    - Intermediate Certificate 2
+    - Root Certificate (self-signed CCA Certificate)
+  - Save the file with .pem extension
